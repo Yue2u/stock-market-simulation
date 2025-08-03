@@ -181,6 +181,11 @@
             color: #e74c3c;
         }
         
+        .status.warning {
+            background-color: #fdf2e9;
+            color: #d68910;
+        }
+        
         .json-input {
             font-family: monospace;
             font-size: 12px;
@@ -351,9 +356,15 @@
         function updateServiceInfo(data) {
             document.getElementById('currentRound').textContent = data.current_round_number;
             
-            const currentPrices = data.current_prices;
-            const roundKey = Object.keys(currentPrices)[0];
-            const currencies = currentPrices[roundKey] ? Object.keys(currentPrices[roundKey]) : [];
+            // Use available_currencies if provided, otherwise fall back to current_prices
+            let currencies = [];
+            if (data.available_currencies) {
+                currencies = data.available_currencies;
+            } else {
+                const currentPrices = data.current_prices;
+                const roundKey = Object.keys(currentPrices)[0];
+                currencies = currentPrices[roundKey] ? Object.keys(currentPrices[roundKey]) : [];
+            }
             document.getElementById('totalCurrencies').textContent = currencies.length;
             
             const currentNews = data.current_news;
@@ -426,7 +437,14 @@
                 });
                 
                 if (response.ok) {
-                    showStatus('Next round started successfully!', 'success');
+                    const result = await response.json();
+                    if (result.status === 'success') {
+                        showStatus(result.message || 'Next round started successfully!', 'success');
+                    } else if (result.status === 'warning') {
+                        showStatus(result.message || 'Warning occurred', 'warning');
+                    } else {
+                        showStatus(result.message || 'Unknown error occurred', 'error');
+                    }
                     setTimeout(loadServiceInfo, 1000);
                 } else {
                     throw new Error('Failed to start next round');
@@ -443,7 +461,8 @@
                 });
                 
                 if (response.ok) {
-                    showStatus('News published successfully!', 'success');
+                    const result = await response.json();
+                    showStatus(result.message || 'News published successfully!', result.status === 'success' ? 'success' : 'error');
                 } else {
                     throw new Error('Failed to publish news');
                 }
@@ -460,7 +479,8 @@
                     });
                     
                     if (response.ok) {
-                        showStatus('Game reset successfully!', 'success');
+                        const result = await response.json();
+                        showStatus(result.message || 'Game reset successfully!', result.status === 'success' ? 'success' : 'error');
                         setTimeout(loadServiceInfo, 1000);
                     } else {
                         throw new Error('Failed to reset game');
@@ -479,7 +499,8 @@
                     });
                     
                     if (response.ok) {
-                        showStatus('Game finished successfully!', 'success');
+                        const result = await response.json();
+                        showStatus(result.message || 'Game finished successfully!', result.status === 'success' ? 'success' : 'error');
                     } else {
                         throw new Error('Failed to finish game');
                     }
@@ -502,7 +523,9 @@
                 });
                 
                 if (response.ok) {
-                    showStatus(`Moved to step ${step} successfully!`, 'success');
+                    const result = await response.json();
+                    const statusType = result.status === 'success' ? 'success' : 'error';
+                    showStatus(result.message || `Moved to step ${step} successfully!`, statusType);
                     setTimeout(loadServiceInfo, 1000);
                 } else {
                     throw new Error('Failed to go to step');
@@ -553,13 +576,18 @@
                 });
                 
                 if (response.ok) {
-                    showStatus(`Round ${roundNumber} updated successfully!`, 'success');
-                    setTimeout(loadServiceInfo, 1000);
+                    const result = await response.json();
+                    const statusType = result.status === 'success' ? 'success' : 'error';
+                    showStatus(result.message || `Round ${roundNumber} updated successfully!`, statusType);
                     
-                    // Clear the form
-                    document.getElementById('editRoundNumber').value = '';
-                    document.getElementById('editChartData').value = '';
-                    document.getElementById('editNewsData').value = '';
+                    if (result.status === 'success') {
+                        setTimeout(loadServiceInfo, 1000);
+                        
+                        // Clear the form
+                        document.getElementById('editRoundNumber').value = '';
+                        document.getElementById('editChartData').value = '';
+                        document.getElementById('editNewsData').value = '';
+                    }
                 } else {
                     throw new Error('Failed to edit round');
                 }

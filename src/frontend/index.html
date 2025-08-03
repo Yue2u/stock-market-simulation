@@ -241,6 +241,169 @@
             border-left: 4px solid #e74c3c;
         }
         
+        .chart-info {
+            text-align: center;
+            padding: 8px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            margin-top: 10px;
+            color: #6c757d;
+            font-style: italic;
+        }
+        
+        .chart-control-btn {
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            cursor: pointer;
+            margin: 0 2px;
+        }
+        
+        .chart-control-btn:hover {
+            background-color: #5a6268;
+        }
+        
+        /* Notification System */
+        .notification-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            max-width: 350px;
+        }
+        
+        .notification {
+            background-color: #ffffff;
+            border-left: 4px solid #3498db;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            margin-bottom: 10px;
+            padding: 15px;
+            cursor: pointer;
+            transform: translateX(100%);
+            opacity: 0;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        
+        .notification.chart-update {
+            border-left-color: #e74c3c;
+        }
+        
+        .notification.news-update {
+            border-left-color: #f39c12;
+        }
+        
+        .notification.chart-load {
+            border-left-color: #27ae60;
+        }
+        
+        .notification.news-load {
+            border-left-color: #9b59b6;
+        }
+        
+        .notification-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .notification-icon {
+            font-size: 18px;
+        }
+        
+        .notification-title {
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 14px;
+        }
+        
+        .notification-time {
+            margin-left: auto;
+            font-size: 11px;
+            color: #7f8c8d;
+        }
+        
+        .notification-message {
+            color: #5a6c7d;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+        
+        .notification-close {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: none;
+            border: none;
+            font-size: 16px;
+            color: #bdc3c7;
+            cursor: pointer;
+            padding: 0;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .notification-close:hover {
+            color: #7f8c8d;
+        }
+        
+        .notification-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            background-color: rgba(52, 152, 219, 0.3);
+            width: 100%;
+            transform-origin: left;
+            animation: progress 10s linear forwards;
+        }
+        
+        @keyframes progress {
+            from { transform: scaleX(1); }
+            to { transform: scaleX(0); }
+        }
+        
+        .notification:hover .notification-progress {
+            animation-play-state: paused;
+        }
+        
+        /* Mobile responsiveness for notifications */
+        @media (max-width: 768px) {
+            .notification-container {
+                top: 10px;
+                right: 10px;
+                left: 10px;
+                max-width: none;
+            }
+            
+            .notification {
+                margin-bottom: 8px;
+                padding: 12px;
+            }
+            
+            .notification-title {
+                font-size: 13px;
+            }
+            
+            .notification-message {
+                font-size: 12px;
+            }
+        }
+        
         .status {
             text-align: center;
             padding: 10px;
@@ -265,6 +428,9 @@
         <div id="status" class="status disconnected">Disconnected</div>
     </div>
     
+    <!-- Notification Container -->
+    <div id="notificationContainer" class="notification-container"></div>
+    
     <div class="container">
         <nav class="nav">
             <button class="nav-btn active" onclick="showSection('chart')">Chart</button>
@@ -279,14 +445,18 @@
                 <label for="currencySelect">Select Currency: </label>
                 <select id="currencySelect" onchange="updateChart()">
                     <option value="all">All Currencies</option>
-                    <option value="Apple">Apple</option>
-                    <option value="Google">Google</option>
-                    <option value="РосАтом">РосАтом</option>
-                    <option value="BitCoin">BitCoin</option>
+                    <!-- Currency options will be populated dynamically -->
                 </select>
             </div>
             <div class="chart-container">
                 <canvas id="stockChart"></canvas>
+            </div>
+            <div class="chart-info">
+                <small><strong>💡 Tip:</strong> Click on legend items to toggle currency visibility. All currencies view uses logarithmic scale for better comparison.</small>
+                <div id="chartControls" style="margin-top: 5px; display: none;">
+                    <button onclick="showAllCurrencies()" class="chart-control-btn">Show All</button>
+                    <button onclick="hideAllCurrencies()" class="chart-control-btn">Hide All</button>
+                </div>
             </div>
         </section>
         
@@ -322,38 +492,7 @@
                         
                         <h3>Stock Purchases</h3>
                         <div id="stockInputs">
-                            <div class="stock-input-enhanced">
-                                <div class="stock-row">
-                                    <label>Apple:</label>
-                                    <span id="apple-buy-price" class="price-display">$0</span>
-                                    <input type="number" id="apple-qty" placeholder="Qty" min="0" oninput="updateCalculation()">
-                                    <span id="apple-cost" class="cost-display">$0</span>
-                                </div>
-                            </div>
-                            <div class="stock-input-enhanced">
-                                <div class="stock-row">
-                                    <label>Google:</label>
-                                    <span id="google-buy-price" class="price-display">$0</span>
-                                    <input type="number" id="google-qty" placeholder="Qty" min="0" oninput="updateCalculation()">
-                                    <span id="google-cost" class="cost-display">$0</span>
-                                </div>
-                            </div>
-                            <div class="stock-input-enhanced">
-                                <div class="stock-row">
-                                    <label>РосАтом:</label>
-                                    <span id="росатом-buy-price" class="price-display">$0</span>
-                                    <input type="number" id="росатом-qty" placeholder="Qty" min="0" oninput="updateCalculation()">
-                                    <span id="росатом-cost" class="cost-display">$0</span>
-                                </div>
-                            </div>
-                            <div class="stock-input-enhanced">
-                                <div class="stock-row">
-                                    <label>BitCoin:</label>
-                                    <span id="bitcoin-buy-price" class="price-display">$0</span>
-                                    <input type="number" id="bitcoin-qty" placeholder="Qty" min="0" oninput="updateCalculation()">
-                                    <span id="bitcoin-cost" class="cost-display">$0</span>
-                                </div>
-                            </div>
+                            <!-- Stock input rows will be populated dynamically -->
                         </div>
                         
                         <label for="sellRound">Sell Round:</label>
@@ -363,26 +502,7 @@
                         
                         <h3>Sell Prices</h3>
                         <div id="sellPrices">
-                            <div class="price-row">
-                                <label>Apple:</label>
-                                <span id="apple-sell-price" class="price-display">$0</span>
-                                <span id="apple-revenue" class="revenue-display">$0</span>
-                            </div>
-                            <div class="price-row">
-                                <label>Google:</label>
-                                <span id="google-sell-price" class="price-display">$0</span>
-                                <span id="google-revenue" class="revenue-display">$0</span>
-                            </div>
-                            <div class="price-row">
-                                <label>РосАтом:</label>
-                                <span id="росатом-sell-price" class="price-display">$0</span>
-                                <span id="росатом-revenue" class="revenue-display">$0</span>
-                            </div>
-                            <div class="price-row">
-                                <label>BitCoin:</label>
-                                <span id="bitcoin-sell-price" class="price-display">$0</span>
-                                <span id="bitcoin-revenue" class="revenue-display">$0</span>
-                            </div>
+                            <!-- Sell price rows will be populated dynamically -->
                         </div>
                     </div>
                     
@@ -427,11 +547,134 @@
         let newsData = {};
         let chart = null;
         let eventSource = null;
+        let availableCurrencies = [];
+        let notificationId = 0;
+        let initialLoadComplete = {chart: false, news: false};
         
+        // Notification System
+        function createNotification(type, title, message, icon) {
+            const container = document.getElementById('notificationContainer');
+            const id = ++notificationId;
+            
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.id = `notification-${id}`;
+            
+            const currentTime = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            
+            notification.innerHTML = `
+                <button class="notification-close" onclick="dismissNotification(${id})" title="Close">×</button>
+                <div class="notification-header">
+                    <span class="notification-icon">${icon}</span>
+                    <span class="notification-title">${title}</span>
+                    <span class="notification-time">${currentTime}</span>
+                </div>
+                <div class="notification-message">${message}</div>
+                <div class="notification-progress"></div>
+            `;
+            
+            // Add click to dismiss
+            notification.addEventListener('click', () => dismissNotification(id));
+            
+            container.appendChild(notification);
+            
+            // Trigger animation
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 10);
+            
+            // Auto dismiss after 10 seconds
+            setTimeout(() => {
+                dismissNotification(id);
+            }, 10000);
+            
+            return id;
+        }
+        
+        function dismissNotification(id) {
+            const notification = document.getElementById(`notification-${id}`);
+            if (notification) {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }
+        }
+        
+        function showChartUpdateNotification(data) {
+            const roundKeys = Object.keys(data);
+            const roundsText = roundKeys.length > 1 
+                ? `rounds ${roundKeys.join(', ')}` 
+                : `round ${roundKeys[0]}`;
+            
+            createNotification(
+                'chart-update',
+                'Chart Data Updated',
+                `New price data available for ${roundsText}`,
+                '📈'
+            );
+        }
+        
+        function showChartLoadNotification(data) {
+            const roundCount = Object.keys(data).length;
+            createNotification(
+                'chart-load',
+                'Chart Data Loaded',
+                `Price history loaded for ${roundCount} round${roundCount !== 1 ? 's' : ''}`,
+                '📊'
+            );
+        }
+        
+        function showNewsUpdateNotification(data) {
+            const roundKeys = Object.keys(data);
+            const newsCount = Object.values(data).reduce((total, news) => total + (news ? news.length : 0), 0);
+            
+            createNotification(
+                'news-update',
+                'News Published',
+                `${newsCount} new news item${newsCount !== 1 ? 's' : ''} published`,
+                '📰'
+            );
+        }
+        
+        function showNewsLoadNotification(data) {
+            const newsCount = Object.values(data).reduce((total, news) => total + (news ? news.length : 0), 0);
+            createNotification(
+                'news-load',
+                'News History Loaded',
+                `${newsCount} news item${newsCount !== 1 ? 's' : ''} loaded`,
+                '📋'
+            );
+        }
+
         // Initialize the application
         function init() {
             initChart();
-            connectToStream();
+            loadCurrencies().then(() => {
+                connectToStream();
+            }).catch(error => {
+                console.error('Failed to load currencies:', error);
+                // Use fallback currencies
+                availableCurrencies = ['Apple', 'Google', 'РосАтом', 'BitCoin'];
+                connectToStream();
+            });
+        }
+        
+        async function loadCurrencies() {
+            try {
+                const response = await fetch('/api/currencies');
+                if (!response.ok) throw new Error('Failed to fetch currencies');
+                const data = await response.json();
+                availableCurrencies = data.currencies;
+                console.log('Loaded currencies:', availableCurrencies);
+                updateCurrencySelector();
+                setupCalculatorCurrencies();
+            } catch (error) {
+                console.error('Error loading currencies:', error);
+                throw error;
+            }
         }
         
         function initChart() {
@@ -463,8 +706,50 @@
                     plugins: {
                         legend: {
                             display: true,
-                            position: 'top'
+                            position: 'top',
+                            onClick: (e, legendItem, legend) => {
+                                // Toggle visibility of the dataset
+                                const index = legendItem.datasetIndex;
+                                const ci = legend.chart;
+                                const meta = ci.getDatasetMeta(index);
+                                const dataset = ci.data.datasets[index];
+                                
+                                // Toggle dataset visibility
+                                meta.hidden = meta.hidden === null ? !dataset.hidden : !meta.hidden;
+                                
+                                // Save visibility state for this currency
+                                const currency = dataset.label;
+                                datasetVisibility[currency] = meta.hidden;
+                                
+                                // Update the legend item style
+                                legendItem.hidden = meta.hidden;
+                                
+                                // Re-render the chart
+                                ci.update();
+                            },
+                            onHover: (e, legendItem) => {
+                                e.native.target.style.cursor = 'pointer';
+                            },
+                            onLeave: (e, legendItem) => {
+                                e.native.target.style.cursor = 'default';
+                            }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                title: function(context) {
+                                    return context[0].label;
+                                },
+                                label: function(context) {
+                                    return `${context.dataset.label}: $${context.parsed.y}`;
+                                }
+                            }
                         }
+                    },
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
                     }
                 }
             });
@@ -476,6 +761,14 @@
             eventSource.onopen = function(event) {
                 document.getElementById('status').className = 'status connected';
                 document.getElementById('status').textContent = 'Connected';
+                
+                // Show connection notification
+                createNotification(
+                    'chart-load',
+                    'Connected',
+                    'Successfully connected to live market data stream',
+                    '🟢'
+                );
             };
             
             eventSource.onmessage = function(event) {
@@ -490,6 +783,14 @@
             eventSource.onerror = function(event) {
                 document.getElementById('status').className = 'status disconnected';
                 document.getElementById('status').textContent = 'Disconnected';
+                
+                // Show disconnection notification
+                createNotification(
+                    'news-update', // Using orange color for warning
+                    'Connection Lost',
+                    'Lost connection to market data stream. Attempting to reconnect...',
+                    '🔴'
+                );
             };
         }
         
@@ -499,23 +800,98 @@
                     stockData = data.data;
                     updateChart();
                     updateRoundSelectors();
+                    // Show notification for chart data load only on first load
+                    if (!initialLoadComplete.chart) {
+                        showChartLoadNotification(data.data);
+                        initialLoadComplete.chart = true;
+                    }
                 } else if (data.event_type === 'update') {
                     Object.assign(stockData, data.data);
                     updateChart();
                     updateRoundSelectors();
+                    // Always show notification for chart data updates
+                    showChartUpdateNotification(data.data);
                 }
             } else if (data.data_type === 'news') {
                 if (data.event_type === 'load') {
                     newsData = data.data;
                     updateNewsRoundSelector();
                     showNewsForRound();
+                    // Show notification for news data load only on first load
+                    if (!initialLoadComplete.news) {
+                        showNewsLoadNotification(data.data);
+                        initialLoadComplete.news = true;
+                    }
                 } else if (data.event_type === 'update') {
                     Object.assign(newsData, data.data);
                     updateNewsRoundSelector();
                     showNewsForRound();
+                    // Always show notification for news updates
+                    showNewsUpdateNotification(data.data);
                 }
             }
         }
+        
+        function updateCurrencySelector() {
+            const select = document.getElementById('currencySelect');
+            const currentValue = select.value;
+            
+            // Clear existing options except "All Currencies"
+            select.innerHTML = '<option value="all">All Currencies</option>';
+            
+            // Add currency options
+            availableCurrencies.forEach(currency => {
+                const option = document.createElement('option');
+                option.value = currency;
+                option.textContent = currency;
+                select.appendChild(option);
+            });
+            
+            // Restore selection if it still exists
+            if (availableCurrencies.includes(currentValue) || currentValue === 'all') {
+                select.value = currentValue;
+            }
+        }
+        
+        function setupCalculatorCurrencies() {
+            const stockInputsContainer = document.getElementById('stockInputs');
+            const sellPricesContainer = document.getElementById('sellPrices');
+            
+            // Clear existing content
+            stockInputsContainer.innerHTML = '';
+            sellPricesContainer.innerHTML = '';
+            
+            // Create stock input rows
+            availableCurrencies.forEach(currency => {
+                const currencyKey = currency.toLowerCase().replace(/[^a-z0-9]/g, '');
+                
+                // Stock purchase row
+                const stockInputDiv = document.createElement('div');
+                stockInputDiv.className = 'stock-input-enhanced';
+                stockInputDiv.innerHTML = `
+                    <div class="stock-row">
+                        <label>${currency}:</label>
+                        <span id="${currencyKey}-buy-price" class="price-display">$0</span>
+                        <input type="number" id="${currencyKey}-qty" placeholder="Qty" min="0" oninput="updateCalculation()">
+                        <span id="${currencyKey}-cost" class="cost-display">$0</span>
+                    </div>
+                `;
+                stockInputsContainer.appendChild(stockInputDiv);
+                
+                // Sell price row
+                const sellPriceDiv = document.createElement('div');
+                sellPriceDiv.className = 'price-row';
+                sellPriceDiv.innerHTML = `
+                    <label>${currency}:</label>
+                    <span id="${currencyKey}-sell-price" class="price-display">$0</span>
+                    <span id="${currencyKey}-revenue" class="revenue-display">$0</span>
+                `;
+                sellPricesContainer.appendChild(sellPriceDiv);
+            });
+        }
+        
+        // Store dataset visibility state
+        let datasetVisibility = {};
         
         function updateChart() {
             const selectedCurrency = document.getElementById('currencySelect').value;
@@ -524,27 +900,88 @@
             chart.data.labels = rounds.map(r => `Round ${r}`);
             
             if (selectedCurrency === 'all') {
-                const currencies = ['Apple', 'Google', 'РосАтом', 'BitCoin'];
-                const colors = ['#e74c3c', '#f39c12', '#2ecc71', '#3498db'];
+                const colors = ['#e74c3c', '#f39c12', '#2ecc71', '#3498db', '#9b59b6', '#1abc9c', '#f1c40f', '#e67e22'];
                 
-                chart.data.datasets = currencies.map((currency, index) => ({
+                chart.data.datasets = availableCurrencies.map((currency, index) => ({
                     label: currency,
                     data: rounds.map(round => stockData[round] ? stockData[round][currency] : 0),
-                    borderColor: colors[index],
-                    backgroundColor: colors[index] + '20',
-                    tension: 0.1
+                    borderColor: colors[index % colors.length],
+                    backgroundColor: colors[index % colors.length] + '20',
+                    tension: 0.1,
+                    hidden: datasetVisibility[currency] || false // Restore previous visibility state
                 }));
+                
+                // Set logarithmic scale for all currencies view
+                chart.options.scales.y.type = 'logarithmic';
+                chart.options.scales.y.beginAtZero = false;
+                chart.options.scales.y.title.text = 'Price (Log Scale)';
+                chart.options.scales.y.ticks = {
+                    callback: function(value, index, values) {
+                        // Format the tick labels to show actual values
+                        if (value >= 1000) {
+                            return '$' + (value / 1000).toFixed(0) + 'k';
+                        } else if (value >= 100) {
+                            return '$' + value.toFixed(0);
+                        } else if (value >= 10) {
+                            return '$' + value.toFixed(1);
+                        } else {
+                            return '$' + value.toFixed(2);
+                        }
+                    }
+                };
+                
+                // Show chart controls for all currencies view
+                document.getElementById('chartControls').style.display = 'block';
             } else {
                 chart.data.datasets = [{
                     label: selectedCurrency,
                     data: rounds.map(round => stockData[round] ? stockData[round][selectedCurrency] : 0),
                     borderColor: '#3498db',
                     backgroundColor: '#3498db20',
-                    tension: 0.1
+                    tension: 0.1,
+                    pointBackgroundColor: '#3498db',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4
                 }];
+                
+                // Set linear scale for single currency view
+                chart.options.scales.y.type = 'linear';
+                chart.options.scales.y.beginAtZero = true;
+                chart.options.scales.y.title.text = 'Price';
+                chart.options.scales.y.ticks = {
+                    callback: function(value, index, values) {
+                        return '$' + value;
+                    }
+                };
+                
+                // Hide chart controls for single currency view
+                document.getElementById('chartControls').style.display = 'none';
             }
             
             chart.update();
+        }
+        
+        function showAllCurrencies() {
+            if (chart && chart.data.datasets) {
+                chart.data.datasets.forEach((dataset, index) => {
+                    const meta = chart.getDatasetMeta(index);
+                    meta.hidden = false;
+                    datasetVisibility[dataset.label] = false;
+                });
+                chart.update();
+            }
+        }
+        
+        function hideAllCurrencies() {
+            if (chart && chart.data.datasets) {
+                chart.data.datasets.forEach((dataset, index) => {
+                    const meta = chart.getDatasetMeta(index);
+                    meta.hidden = true;
+                    datasetVisibility[dataset.label] = true;
+                });
+                chart.update();
+            }
         }
         
         function updateRoundSelectors() {
@@ -615,7 +1052,6 @@
         function updatePriceDisplays() {
             const buyRound = document.getElementById('buyRound').value;
             const sellRound = document.getElementById('sellRound').value;
-            const currencies = ['Apple', 'Google', 'РосАтом', 'BitCoin'];
             
             try {
                 if (!stockData || Object.keys(stockData).length === 0) {
@@ -629,13 +1065,16 @@
                 const buyPrices = stockData[buyRound];
                 const sellPrices = stockData[sellRound];
                 
-                currencies.forEach(currency => {
-                    const currencyKey = currency.toLowerCase().replace('росатом', 'росатом');
+                availableCurrencies.forEach(currency => {
+                    const currencyKey = currency.toLowerCase().replace(/[^a-z0-9]/g, '');
                     const buyPrice = buyPrices[currency] || 0;
                     const sellPrice = sellPrices[currency] || 0;
                     
-                    document.getElementById(`${currencyKey}-buy-price`).textContent = `$${buyPrice}`;
-                    document.getElementById(`${currencyKey}-sell-price`).textContent = `$${sellPrice}`;
+                    const buyPriceElement = document.getElementById(`${currencyKey}-buy-price`);
+                    const sellPriceElement = document.getElementById(`${currencyKey}-sell-price`);
+                    
+                    if (buyPriceElement) buyPriceElement.textContent = `$${buyPrice}`;
+                    if (sellPriceElement) sellPriceElement.textContent = `$${sellPrice}`;
                 });
                 
                 hideError();
@@ -649,12 +1088,13 @@
             const buyRound = document.getElementById('buyRound').value;
             const sellRound = document.getElementById('sellRound').value;
             
-            const quantities = {
-                'Apple': parseFloat(document.getElementById('apple-qty').value) || 0,
-                'Google': parseFloat(document.getElementById('google-qty').value) || 0,
-                'РосАтом': parseFloat(document.getElementById('росатом-qty').value) || 0,
-                'BitCoin': parseFloat(document.getElementById('bitcoin-qty').value) || 0
-            };
+            // Build quantities object dynamically
+            const quantities = {};
+            availableCurrencies.forEach(currency => {
+                const currencyKey = currency.toLowerCase().replace(/[^a-z0-9]/g, '');
+                const qtyInput = document.getElementById(`${currencyKey}-qty`);
+                quantities[currency] = qtyInput ? (parseFloat(qtyInput.value) || 0) : 0;
+            });
             
             try {
                 if (!stockData || Object.keys(stockData).length === 0) {
@@ -674,7 +1114,7 @@
                 // Update individual stock costs and revenues
                 Object.keys(quantities).forEach(currency => {
                     const qty = quantities[currency];
-                    const currencyKey = currency.toLowerCase().replace('росатом', 'росатом');
+                    const currencyKey = currency.toLowerCase().replace(/[^a-z0-9]/g, '');
                     const buyPrice = buyPrices[currency] || 0;
                     const sellPrice = sellPrices[currency] || 0;
                     
@@ -684,8 +1124,11 @@
                     totalCost += cost;
                     totalRevenue += revenue;
                     
-                    document.getElementById(`${currencyKey}-cost`).textContent = `$${cost.toFixed(2)}`;
-                    document.getElementById(`${currencyKey}-revenue`).textContent = `$${revenue.toFixed(2)}`;
+                    const costElement = document.getElementById(`${currencyKey}-cost`);
+                    const revenueElement = document.getElementById(`${currencyKey}-revenue`);
+                    
+                    if (costElement) costElement.textContent = `$${cost.toFixed(2)}`;
+                    if (revenueElement) revenueElement.textContent = `$${revenue.toFixed(2)}`;
                 });
                 
                 const moneyLeft = initialMoney - totalCost;
@@ -718,10 +1161,13 @@
                 showError(error.message);
                 
                 // Reset displays on error
-                const currencies = ['apple', 'google', 'росатом', 'bitcoin'];
-                currencies.forEach(curr => {
-                    document.getElementById(`${curr}-cost`).textContent = '$0.00';
-                    document.getElementById(`${curr}-revenue`).textContent = '$0.00';
+                availableCurrencies.forEach(currency => {
+                    const currencyKey = currency.toLowerCase().replace(/[^a-z0-9]/g, '');
+                    const costElement = document.getElementById(`${currencyKey}-cost`);
+                    const revenueElement = document.getElementById(`${currencyKey}-revenue`);
+                    
+                    if (costElement) costElement.textContent = '$0.00';
+                    if (revenueElement) revenueElement.textContent = '$0.00';
                 });
                 
                 ['tracker-initial', 'tracker-investment', 'tracker-remaining', 

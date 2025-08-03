@@ -61,11 +61,11 @@ class UpdateEvent(DataTypedEvent):
 
 
 class NewsUpdateEvent(UpdateEvent):
-    _data_type = "news"
+    _data_type = EventDataType.NEWS
 
 
 class ChartUpdateEvent(UpdateEvent):
-    _data_type = "chart"
+    _data_type = EventDataType.CHART
 
 
 class StopStreamEvent(Event):
