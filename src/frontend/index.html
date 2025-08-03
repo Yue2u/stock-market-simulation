@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Market Simulation</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .nav {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .nav-btn {
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .nav-btn:hover {
+            background-color: #2980b9;
+        }
+        
+        .nav-btn.active {
+            background-color: #e74c3c;
+        }
+        
+        .section {
+            display: none;
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .section.active {
+            display: block;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-bottom: 20px;
+        }
+        
+        .currency-selector {
+            margin-bottom: 20px;
+        }
+        
+        .currency-selector select {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        
+        .news-item {
+            background-color: #ecf0f1;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .round-selector {
+            margin-bottom: 20px;
+        }
+        
+        .round-selector select {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        
+        .calculator {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .calculator input, .calculator select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        
+        .calculator button {
+            background-color: #27ae60;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .calculator button:hover {
+            background-color: #229954;
+        }
+        
+        .result {
+            background-color: #d5f4e6;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            border-left: 4px solid #27ae60;
+        }
+        
+        .stock-input {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .stock-input label {
+            min-width: 100px;
+        }
+        
+        .stock-input-enhanced {
+            margin-bottom: 15px;
+        }
+        
+        .stock-row {
+            display: grid;
+            grid-template-columns: 80px 60px 1fr 80px;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .price-row {
+            display: grid;
+            grid-template-columns: 80px 60px 80px;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .price-display {
+            background-color: #e8f4fd;
+            padding: 5px 8px;
+            border-radius: 3px;
+            font-weight: bold;
+            color: #2980b9;
+            font-size: 12px;
+            text-align: center;
+        }
+        
+        .cost-display, .revenue-display {
+            background-color: #f0f8f0;
+            padding: 5px 8px;
+            border-radius: 3px;
+            font-weight: bold;
+            color: #27ae60;
+            font-size: 12px;
+            text-align: center;
+        }
+        
+        .money-tracker {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #dee2e6;
+        }
+        
+        .tracker-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding: 3px 0;
+        }
+        
+        .money-left {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        
+        .profit-display {
+            font-weight: bold;
+        }
+        
+        .profit-display.positive {
+            color: #27ae60;
+        }
+        
+        .profit-display.negative {
+            color: #e74c3c;
+        }
+        
+        .final-money {
+            background-color: #e8f5e8;
+            padding: 8px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        
+        .error-display {
+            background-color: #fadbd8;
+            color: #e74c3c;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 15px;
+            border-left: 4px solid #e74c3c;
+        }
+        
+        .status {
+            text-align: center;
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        
+        .status.connected {
+            background-color: #d5f4e6;
+            color: #27ae60;
+        }
+        
+        .status.disconnected {
+            background-color: #fadbd8;
+            color: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Stock Market Simulation</h1>
+        <div id="status" class="status disconnected">Disconnected</div>
+    </div>
+    
+    <div class="container">
+        <nav class="nav">
+            <button class="nav-btn active" onclick="showSection('chart')">Chart</button>
+            <button class="nav-btn" onclick="showSection('news')">News</button>
+            <button class="nav-btn" onclick="showSection('calculator')">Calculator</button>
+        </nav>
+        
+        <!-- Chart Section -->
+        <section id="chart" class="section active">
+            <h2>Stock Prices Chart</h2>
+            <div class="currency-selector">
+                <label for="currencySelect">Select Currency: </label>
+                <select id="currencySelect" onchange="updateChart()">
+                    <option value="all">All Currencies</option>
+                    <option value="Apple">Apple</option>
+                    <option value="Google">Google</option>
+                    <option value="РосАтом">РосАтом</option>
+                    <option value="BitCoin">BitCoin</option>
+                </select>
+            </div>
+            <div class="chart-container">
+                <canvas id="stockChart"></canvas>
+            </div>
+        </section>
+        
+        <!-- News Section -->
+        <section id="news" class="section">
+            <h2>Market News</h2>
+            <div class="round-selector">
+                <label for="newsRoundSelect">Select Round: </label>
+                <select id="newsRoundSelect" onchange="showNewsForRound()">
+                    <option value="current">Current Round</option>
+                </select>
+            </div>
+            <div id="newsContainer">
+                <p>No news available</p>
+            </div>
+        </section>
+        
+        <!-- Calculator Section -->
+        <section id="calculator" class="section">
+            <h2>Dynamic Profit Calculator</h2>
+            <div class="calculator">
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px;">
+                    <!-- Left Column: Inputs -->
+                    <div>
+                        <h3>Starting Investment</h3>
+                        <label for="initialMoney">Initial Money:</label>
+                        <input type="number" id="initialMoney" placeholder="Enter your starting money" oninput="updateCalculation()">
+                        
+                        <label for="buyRound">Buy Round:</label>
+                        <select id="buyRound" onchange="updateCalculation(); updatePriceDisplays();">
+                            <option value="0">Round 0</option>
+                        </select>
+                        
+                        <h3>Stock Purchases</h3>
+                        <div id="stockInputs">
+                            <div class="stock-input-enhanced">
+                                <div class="stock-row">
+                                    <label>Apple:</label>
+                                    <span id="apple-buy-price" class="price-display">$0</span>
+                                    <input type="number" id="apple-qty" placeholder="Qty" min="0" oninput="updateCalculation()">
+                                    <span id="apple-cost" class="cost-display">$0</span>
+                                </div>
+                            </div>
+                            <div class="stock-input-enhanced">
+                                <div class="stock-row">
+                                    <label>Google:</label>
+                                    <span id="google-buy-price" class="price-display">$0</span>
+                                    <input type="number" id="google-qty" placeholder="Qty" min="0" oninput="updateCalculation()">
+                                    <span id="google-cost" class="cost-display">$0</span>
+                                </div>
+                            </div>
+                            <div class="stock-input-enhanced">
+                                <div class="stock-row">
+                                    <label>РосАтом:</label>
+                                    <span id="росатом-buy-price" class="price-display">$0</span>
+                                    <input type="number" id="росатом-qty" placeholder="Qty" min="0" oninput="updateCalculation()">
+                                    <span id="росатом-cost" class="cost-display">$0</span>
+                                </div>
+                            </div>
+                            <div class="stock-input-enhanced">
+                                <div class="stock-row">
+                                    <label>BitCoin:</label>
+                                    <span id="bitcoin-buy-price" class="price-display">$0</span>
+                                    <input type="number" id="bitcoin-qty" placeholder="Qty" min="0" oninput="updateCalculation()">
+                                    <span id="bitcoin-cost" class="cost-display">$0</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <label for="sellRound">Sell Round:</label>
+                        <select id="sellRound" onchange="updateCalculation(); updatePriceDisplays();">
+                            <option value="1">Round 1</option>
+                        </select>
+                        
+                        <h3>Sell Prices</h3>
+                        <div id="sellPrices">
+                            <div class="price-row">
+                                <label>Apple:</label>
+                                <span id="apple-sell-price" class="price-display">$0</span>
+                                <span id="apple-revenue" class="revenue-display">$0</span>
+                            </div>
+                            <div class="price-row">
+                                <label>Google:</label>
+                                <span id="google-sell-price" class="price-display">$0</span>
+                                <span id="google-revenue" class="revenue-display">$0</span>
+                            </div>
+                            <div class="price-row">
+                                <label>РосАтом:</label>
+                                <span id="росатом-sell-price" class="price-display">$0</span>
+                                <span id="росатом-revenue" class="revenue-display">$0</span>
+                            </div>
+                            <div class="price-row">
+                                <label>BitCoin:</label>
+                                <span id="bitcoin-sell-price" class="price-display">$0</span>
+                                <span id="bitcoin-revenue" class="revenue-display">$0</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Right Column: Money Tracker -->
+                    <div class="money-tracker">
+                        <h3>💰 Money Tracker</h3>
+                        <div class="tracker-item">
+                            <span>Initial Money:</span>
+                            <span id="tracker-initial">$0.00</span>
+                        </div>
+                        <div class="tracker-item">
+                            <span>Total Investment:</span>
+                            <span id="tracker-investment">$0.00</span>
+                        </div>
+                        <div class="tracker-item">
+                            <span>Money Left:</span>
+                            <span id="tracker-remaining" class="money-left">$0.00</span>
+                        </div>
+                        <hr style="margin: 10px 0; border-color: #ddd;">
+                        <div class="tracker-item">
+                            <span>Total Revenue:</span>
+                            <span id="tracker-revenue">$0.00</span>
+                        </div>
+                        <div class="tracker-item">
+                            <span>Net Profit:</span>
+                            <span id="tracker-profit" class="profit-display">$0.00</span>
+                        </div>
+                        <div class="tracker-item final-money">
+                            <span><strong>Final Money:</strong></span>
+                            <span id="tracker-final"><strong>$0.00</strong></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="calculationErrors" class="error-display" style="display: none;"></div>
+            </div>
+        </section>
+    </div>
+    
+    <script>
+        let stockData = {};
+        let newsData = {};
+        let chart = null;
+        let eventSource = null;
+        
+        // Initialize the application
+        function init() {
+            initChart();
+            connectToStream();
+        }
+        
+        function initChart() {
+            const ctx = document.getElementById('stockChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: []
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Price'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Round'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    }
+                }
+            });
+        }
+        
+        function connectToStream() {
+            eventSource = new EventSource('/stream');
+            
+            eventSource.onopen = function(event) {
+                document.getElementById('status').className = 'status connected';
+                document.getElementById('status').textContent = 'Connected';
+            };
+            
+            eventSource.onmessage = function(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    handleStreamData(data);
+                } catch (e) {
+                    console.error('Error parsing stream data:', e);
+                }
+            };
+            
+            eventSource.onerror = function(event) {
+                document.getElementById('status').className = 'status disconnected';
+                document.getElementById('status').textContent = 'Disconnected';
+            };
+        }
+        
+        function handleStreamData(data) {
+            if (data.data_type === 'chart') {
+                if (data.event_type === 'load') {
+                    stockData = data.data;
+                    updateChart();
+                    updateRoundSelectors();
+                } else if (data.event_type === 'update') {
+                    Object.assign(stockData, data.data);
+                    updateChart();
+                    updateRoundSelectors();
+                }
+            } else if (data.data_type === 'news') {
+                if (data.event_type === 'load') {
+                    newsData = data.data;
+                    updateNewsRoundSelector();
+                    showNewsForRound();
+                } else if (data.event_type === 'update') {
+                    Object.assign(newsData, data.data);
+                    updateNewsRoundSelector();
+                    showNewsForRound();
+                }
+            }
+        }
+        
+        function updateChart() {
+            const selectedCurrency = document.getElementById('currencySelect').value;
+            const rounds = Object.keys(stockData).sort((a, b) => parseInt(a) - parseInt(b));
+            
+            chart.data.labels = rounds.map(r => `Round ${r}`);
+            
+            if (selectedCurrency === 'all') {
+                const currencies = ['Apple', 'Google', 'РосАтом', 'BitCoin'];
+                const colors = ['#e74c3c', '#f39c12', '#2ecc71', '#3498db'];
+                
+                chart.data.datasets = currencies.map((currency, index) => ({
+                    label: currency,
+                    data: rounds.map(round => stockData[round] ? stockData[round][currency] : 0),
+                    borderColor: colors[index],
+                    backgroundColor: colors[index] + '20',
+                    tension: 0.1
+                }));
+            } else {
+                chart.data.datasets = [{
+                    label: selectedCurrency,
+                    data: rounds.map(round => stockData[round] ? stockData[round][selectedCurrency] : 0),
+                    borderColor: '#3498db',
+                    backgroundColor: '#3498db20',
+                    tension: 0.1
+                }];
+            }
+            
+            chart.update();
+        }
+        
+        function updateRoundSelectors() {
+            const rounds = Object.keys(stockData).sort((a, b) => parseInt(a) - parseInt(b));
+            
+            const buySelect = document.getElementById('buyRound');
+            const sellSelect = document.getElementById('sellRound');
+            
+            const currentBuyValue = buySelect.value;
+            const currentSellValue = sellSelect.value;
+            
+            buySelect.innerHTML = '';
+            sellSelect.innerHTML = '';
+            
+            rounds.forEach(round => {
+                buySelect.innerHTML += `<option value="${round}">Round ${round}</option>`;
+                sellSelect.innerHTML += `<option value="${round}">Round ${round}</option>`;
+            });
+            
+            // Restore previous selections if they still exist
+            if (rounds.includes(currentBuyValue)) {
+                buySelect.value = currentBuyValue;
+            }
+            if (rounds.includes(currentSellValue)) {
+                sellSelect.value = currentSellValue;
+            }
+            
+            // Update price displays and calculations
+            updatePriceDisplays();
+            updateCalculation();
+        }
+        
+        function updateNewsRoundSelector() {
+            const rounds = Object.keys(newsData).sort((a, b) => parseInt(a) - parseInt(b));
+            const select = document.getElementById('newsRoundSelect');
+            
+            const currentValue = select.value;
+            select.innerHTML = '<option value="current">Current Round</option>';
+            
+            rounds.forEach(round => {
+                select.innerHTML += `<option value="${round}">Round ${round}</option>`;
+            });
+            
+            select.value = currentValue;
+        }
+        
+        function showNewsForRound() {
+            const selectedRound = document.getElementById('newsRoundSelect').value;
+            const container = document.getElementById('newsContainer');
+            
+            let news = [];
+            if (selectedRound === 'current') {
+                const maxRound = Math.max(...Object.keys(newsData).map(r => parseInt(r)));
+                news = newsData[maxRound] || [];
+            } else {
+                news = newsData[selectedRound] || [];
+            }
+            
+            if (news.length === 0) {
+                container.innerHTML = '<p>No news available for this round</p>';
+            } else {
+                container.innerHTML = news.map(item => 
+                    `<div class="news-item">${item}</div>`
+                ).join('');
+            }
+        }
+        
+        function updatePriceDisplays() {
+            const buyRound = document.getElementById('buyRound').value;
+            const sellRound = document.getElementById('sellRound').value;
+            const currencies = ['Apple', 'Google', 'РосАтом', 'BitCoin'];
+            
+            try {
+                if (!stockData || Object.keys(stockData).length === 0) {
+                    throw new Error('No chart data available');
+                }
+                
+                if (!stockData[buyRound] || !stockData[sellRound]) {
+                    throw new Error('Selected rounds not available in data');
+                }
+                
+                const buyPrices = stockData[buyRound];
+                const sellPrices = stockData[sellRound];
+                
+                currencies.forEach(currency => {
+                    const currencyKey = currency.toLowerCase().replace('росатом', 'росатом');
+                    const buyPrice = buyPrices[currency] || 0;
+                    const sellPrice = sellPrices[currency] || 0;
+                    
+                    document.getElementById(`${currencyKey}-buy-price`).textContent = `$${buyPrice}`;
+                    document.getElementById(`${currencyKey}-sell-price`).textContent = `$${sellPrice}`;
+                });
+                
+                hideError();
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+        
+        function updateCalculation() {
+            const initialMoney = parseFloat(document.getElementById('initialMoney').value) || 0;
+            const buyRound = document.getElementById('buyRound').value;
+            const sellRound = document.getElementById('sellRound').value;
+            
+            const quantities = {
+                'Apple': parseFloat(document.getElementById('apple-qty').value) || 0,
+                'Google': parseFloat(document.getElementById('google-qty').value) || 0,
+                'РосАтом': parseFloat(document.getElementById('росатом-qty').value) || 0,
+                'BitCoin': parseFloat(document.getElementById('bitcoin-qty').value) || 0
+            };
+            
+            try {
+                if (!stockData || Object.keys(stockData).length === 0) {
+                    throw new Error('No chart data available. Please wait for data to load.');
+                }
+                
+                if (!stockData[buyRound] || !stockData[sellRound]) {
+                    throw new Error('Selected rounds not available in local data');
+                }
+                
+                const buyPrices = stockData[buyRound];
+                const sellPrices = stockData[sellRound];
+                
+                let totalCost = 0;
+                let totalRevenue = 0;
+                
+                // Update individual stock costs and revenues
+                Object.keys(quantities).forEach(currency => {
+                    const qty = quantities[currency];
+                    const currencyKey = currency.toLowerCase().replace('росатом', 'росатом');
+                    const buyPrice = buyPrices[currency] || 0;
+                    const sellPrice = sellPrices[currency] || 0;
+                    
+                    const cost = qty * buyPrice;
+                    const revenue = qty * sellPrice;
+                    
+                    totalCost += cost;
+                    totalRevenue += revenue;
+                    
+                    document.getElementById(`${currencyKey}-cost`).textContent = `$${cost.toFixed(2)}`;
+                    document.getElementById(`${currencyKey}-revenue`).textContent = `$${revenue.toFixed(2)}`;
+                });
+                
+                const moneyLeft = initialMoney - totalCost;
+                const totalProfit = totalRevenue - totalCost;
+                const finalMoney = initialMoney - totalCost + totalRevenue;
+                
+                // Update money tracker
+                document.getElementById('tracker-initial').textContent = `$${initialMoney.toFixed(2)}`;
+                document.getElementById('tracker-investment').textContent = `$${totalCost.toFixed(2)}`;
+                document.getElementById('tracker-remaining').textContent = `$${moneyLeft.toFixed(2)}`;
+                document.getElementById('tracker-revenue').textContent = `$${totalRevenue.toFixed(2)}`;
+                document.getElementById('tracker-profit').textContent = `$${totalProfit.toFixed(2)}`;
+                document.getElementById('tracker-final').textContent = `$${finalMoney.toFixed(2)}`;
+                
+                // Color coding for money left and profit
+                const moneyLeftElement = document.getElementById('tracker-remaining');
+                moneyLeftElement.className = moneyLeft >= 0 ? 'money-left positive' : 'money-left negative';
+                if (moneyLeft < 0) {
+                    moneyLeftElement.style.color = '#e74c3c';
+                } else {
+                    moneyLeftElement.style.color = '#27ae60';
+                }
+                
+                const profitElement = document.getElementById('tracker-profit');
+                profitElement.className = totalProfit >= 0 ? 'profit-display positive' : 'profit-display negative';
+                
+                hideError();
+                
+            } catch (error) {
+                showError(error.message);
+                
+                // Reset displays on error
+                const currencies = ['apple', 'google', 'росатом', 'bitcoin'];
+                currencies.forEach(curr => {
+                    document.getElementById(`${curr}-cost`).textContent = '$0.00';
+                    document.getElementById(`${curr}-revenue`).textContent = '$0.00';
+                });
+                
+                ['tracker-initial', 'tracker-investment', 'tracker-remaining', 
+                 'tracker-revenue', 'tracker-profit', 'tracker-final'].forEach(id => {
+                    document.getElementById(id).textContent = '$0.00';
+                });
+            }
+        }
+        
+        function showError(message) {
+            const errorDiv = document.getElementById('calculationErrors');
+            errorDiv.style.display = 'block';
+            errorDiv.innerHTML = `<strong>Error:</strong> ${message}`;
+        }
+        
+        function hideError() {
+            document.getElementById('calculationErrors').style.display = 'none';
+        }
+        
+        function showSection(sectionName) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Remove active class from all nav buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected section
+            document.getElementById(sectionName).classList.add('active');
+            
+            // Add active class to clicked button
+            event.target.classList.add('active');
+        }
+        
+        // Initialize when page loads
+        window.onload = init;
+    </script>
+</body>
+</html>
