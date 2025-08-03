@@ -54,7 +54,7 @@ async def lifespan(app: FastAPI):
     logger.info("Stock market simulation server stopped")
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None)
 app.include_router(router)
 
 

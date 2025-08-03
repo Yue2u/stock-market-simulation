@@ -1,16 +1,25 @@
 import httpx
 import uvloop
+import asyncio
 
 
-async def main():
+async def client():
     async with httpx.AsyncClient() as client:
         async with client.stream(
             "GET",
-            "http://localhost:8000/stream",
+            "https://stock-market-simulation.onrender.com/stream",
             timeout=None
         ) as stream:
             async for msg in stream.aiter_lines():
                 print(msg)
 
 
-uvloop.run(main())
+async def main(clients: int = 1):
+    await asyncio.gather(
+        *[
+            client()
+            for _ in range(clients)
+        ]
+    )
+
+uvloop.run(main(100))
