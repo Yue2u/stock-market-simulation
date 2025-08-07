@@ -290,6 +290,11 @@
             overflow: hidden;
         }
         
+        .notification:hover {
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+            transform: translateX(-2px);
+        }
+        
         .notification.show {
             transform: translateX(0);
             opacity: 1;
@@ -433,9 +438,9 @@
     
     <div class="container">
         <nav class="nav">
-            <button class="nav-btn active" onclick="showSection('chart')">Chart</button>
-            <button class="nav-btn" onclick="showSection('news')">News</button>
-            <button class="nav-btn" onclick="showSection('calculator')">Calculator</button>
+            <button class="nav-btn active" onclick="showSection('chart', true)">Chart</button>
+            <button class="nav-btn" onclick="showSection('news', true)">News</button>
+            <button class="nav-btn" onclick="showSection('calculator', true)">Calculator</button>
         </nav>
         
         <!-- Chart Section -->
@@ -556,7 +561,7 @@
         let initialLoadComplete = {chart: false, news: false};
         
         // Notification System
-        function createNotification(type, title, message, icon) {
+        function createNotification(type, title, message, icon, clickAction = null) {
             const container = document.getElementById('notificationContainer');
             const id = ++notificationId;
             
@@ -577,8 +582,20 @@
                 <div class="notification-progress"></div>
             `;
             
-            // Add click to dismiss
-            notification.addEventListener('click', () => dismissNotification(id));
+            // Add click handler - either custom action or dismiss
+            notification.addEventListener('click', (e) => {
+                // Don't trigger action if clicking the close button
+                if (e.target.classList.contains('notification-close')) {
+                    return;
+                }
+                
+                if (clickAction) {
+                    clickAction();
+                    dismissNotification(id);
+                } else {
+                    dismissNotification(id);
+                }
+            });
             
             container.appendChild(notification);
             
@@ -616,8 +633,9 @@
             createNotification(
                 'chart-update',
                 'Chart Data Updated',
-                `New price data available for ${roundsText}`,
-                '📈'
+                `New price data available for ${roundsText}. Click to view chart.`,
+                '📈',
+                () => showSection('chart')
             );
         }
         
@@ -626,8 +644,9 @@
             createNotification(
                 'chart-load',
                 'Chart Data Loaded',
-                `Price history loaded for ${roundCount} round${roundCount !== 1 ? 's' : ''}`,
-                '📊'
+                `Price history loaded for ${roundCount} round${roundCount !== 1 ? 's' : ''}. Click to view chart.`,
+                '📊',
+                () => showSection('chart')
             );
         }
         
@@ -638,8 +657,17 @@
             createNotification(
                 'news-update',
                 'News Published',
-                `${newsCount} new news item${newsCount !== 1 ? 's' : ''} published`,
-                '📰'
+                `${newsCount} new news item${newsCount !== 1 ? 's' : ''} published. Click to read news.`,
+                '📰',
+                () => {
+                    showSection('news');
+                    // Set news selector to current round and update display
+                    const newsSelect = document.getElementById('newsRoundSelect');
+                    if (newsSelect) {
+                        newsSelect.value = 'current';
+                        showNewsForRound();
+                    }
+                }
             );
         }
         
@@ -648,8 +676,17 @@
             createNotification(
                 'news-load',
                 'News History Loaded',
-                `${newsCount} news item${newsCount !== 1 ? 's' : ''} loaded`,
-                '📋'
+                `${newsCount} news item${newsCount !== 1 ? 's' : ''} loaded. Click to read news.`,
+                '📋',
+                () => {
+                    showSection('news');
+                    // Set news selector to current round and update display
+                    const newsSelect = document.getElementById('newsRoundSelect');
+                    if (newsSelect) {
+                        newsSelect.value = 'current';
+                        showNewsForRound();
+                    }
+                }
             );
         }
 
@@ -802,7 +839,6 @@
             if (data.data_type === 'chart') {
                 if (data.event_type === 'load') {
                     stockData = data.data;
-                    console.log('handleStreamData - chart load, stockData:', stockData);
                     updateChart();
                     updateRoundSelectors();
                     // Show notification for chart data load only on first load
@@ -812,7 +848,6 @@
                     }
                 } else if (data.event_type === 'update') {
                     Object.assign(stockData, data.data);
-                    console.log('handleStreamData - chart update, new stockData:', stockData);
                     updateChart();
                     updateRoundSelectors();
                     // Always show notification for chart data updates
@@ -1071,17 +1106,10 @@
                 const buyPrices = stockData[buyRound];
                 const sellPrices = stockData[sellRound];
                 
-                // Debug logging
-                console.log('updatePriceDisplays - buyRound:', buyRound, 'sellRound:', sellRound);
-                console.log('updatePriceDisplays - buyPrices:', buyPrices);
-                console.log('updatePriceDisplays - sellPrices:', sellPrices);
-                
                 availableCurrencies.forEach(currency => {
                     const currencyKey = currency.toLowerCase().replace(/[^a-z0-9]/g, '');
                     const buyPrice = buyPrices[currency] || 0;
                     const sellPrice = sellPrices[currency] || 0;
-                    
-                    console.log(`updatePriceDisplays - ${currency}: buy=${buyPrice}, sell=${sellPrice}`);
                     
                     const buyPriceElement = document.getElementById(`${currencyKey}-buy-price`);
                     const sellPriceElement = document.getElementById(`${currencyKey}-sell-price`);
@@ -1121,11 +1149,6 @@
                 const buyPrices = stockData[buyRound];
                 const sellPrices = stockData[sellRound];
                 
-                // Debug logging
-                console.log('updateCalculation - buyRound:', buyRound, 'sellRound:', sellRound);
-                console.log('updateCalculation - buyPrices:', buyPrices);
-                console.log('updateCalculation - sellPrices:', sellPrices);
-                
                 let totalCost = 0;
                 let totalRevenue = 0;
                 
@@ -1135,8 +1158,6 @@
                     const currencyKey = currency.toLowerCase().replace(/[^a-z0-9]/g, '');
                     const buyPrice = buyPrices[currency] || 0;
                     const sellPrice = sellPrices[currency] || 0;
-                    
-                    console.log(`updateCalculation - ${currency}: qty=${qty}, buy=${buyPrice}, sell=${sellPrice}`);
                     
                     const cost = qty * buyPrice;
                     const revenue = qty * sellPrice;
@@ -1221,22 +1242,28 @@
             updateCalculation();
         }
         
-        function showSection(sectionName) {
+        function showSection(sectionName, updateNavigation = true) {
             // Hide all sections
             document.querySelectorAll('.section').forEach(section => {
                 section.classList.remove('active');
             });
             
-            // Remove active class from all nav buttons
-            document.querySelectorAll('.nav-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            
             // Show selected section
             document.getElementById(sectionName).classList.add('active');
             
-            // Add active class to clicked button
-            event.target.classList.add('active');
+            // Update navigation buttons if requested
+            if (updateNavigation) {
+                document.querySelectorAll('.nav-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                
+                // Find and activate the corresponding nav button
+                const navButtons = document.querySelectorAll('.nav-btn');
+                const sectionIndex = {'chart': 0, 'news': 1, 'calculator': 2}[sectionName];
+                if (sectionIndex !== undefined && navButtons[sectionIndex]) {
+                    navButtons[sectionIndex].classList.add('active');
+                }
+            }
         }
         
         // Initialize when page loads
