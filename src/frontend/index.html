@@ -366,6 +366,49 @@
             color: #7f8c8d;
         }
         
+        .notification-action-btn {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 8px 16px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+            min-height: 36px;
+            min-width: 80px;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .notification-action-btn:hover {
+            background: linear-gradient(135deg, #2980b9, #21618c);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        .notification-action-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .notification-action-btn.news-btn {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+        }
+        
+        .notification-action-btn.news-btn:hover {
+            background: linear-gradient(135deg, #e67e22, #d35400);
+        }
+        
+        .notification-action-btn.chart-btn {
+            background: linear-gradient(135deg, #27ae60, #229954);
+        }
+        
+        .notification-action-btn.chart-btn:hover {
+            background: linear-gradient(135deg, #229954, #1e8449);
+        }
+        
         .notification-progress {
             position: absolute;
             bottom: 0;
@@ -406,6 +449,15 @@
             
             .notification-message {
                 font-size: 12px;
+            }
+            
+            .notification-action-btn {
+                min-height: 44px;
+                min-width: 120px;
+                font-size: 14px;
+                padding: 12px 20px;
+                margin-top: 12px;
+                border-radius: 22px;
             }
         }
         
@@ -561,7 +613,7 @@
         let initialLoadComplete = {chart: false, news: false};
         
         // Notification System
-        function createNotification(type, title, message, icon, clickAction = null) {
+        function createNotification(type, title, message, icon, clickAction = null, buttonText = null, buttonClass = '') {
             const container = document.getElementById('notificationContainer');
             const id = ++notificationId;
             
@@ -571,6 +623,12 @@
             
             const currentTime = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
             
+            // Create action button HTML if clickAction is provided
+            const actionButtonHTML = clickAction && buttonText ? 
+                `<button class="notification-action-btn ${buttonClass}" onclick="handleNotificationAction(${id})" title="${buttonText}">
+                    ${buttonText}
+                </button>` : '';
+            
             notification.innerHTML = `
                 <button class="notification-close" onclick="dismissNotification(${id})" title="Close">×</button>
                 <div class="notification-header">
@@ -579,13 +637,21 @@
                     <span class="notification-time">${currentTime}</span>
                 </div>
                 <div class="notification-message">${message}</div>
+                ${actionButtonHTML}
                 <div class="notification-progress"></div>
             `;
             
-            // Add click handler - either custom action or dismiss
+            // Store the click action for this notification
+            if (clickAction) {
+                notification.dataset.clickAction = id;
+                window[`notificationAction_${id}`] = clickAction;
+            }
+            
+            // Add click handler for the whole notification (but exclude button clicks)
             notification.addEventListener('click', (e) => {
-                // Don't trigger action if clicking the close button
-                if (e.target.classList.contains('notification-close')) {
+                // Don't trigger action if clicking the close button or action button
+                if (e.target.classList.contains('notification-close') || 
+                    e.target.classList.contains('notification-action-btn')) {
                     return;
                 }
                 
@@ -604,18 +670,31 @@
                 notification.classList.add('show');
             }, 10);
             
-            // Auto dismiss after 10 seconds
+            // Auto dismiss after 15 seconds (longer since we have action button)
             setTimeout(() => {
                 dismissNotification(id);
-            }, 10000);
+            }, 15000);
             
             return id;
+        }
+        
+        // Handle notification action button clicks
+        function handleNotificationAction(id) {
+            const action = window[`notificationAction_${id}`];
+            if (action) {
+                action();
+                dismissNotification(id);
+            }
         }
         
         function dismissNotification(id) {
             const notification = document.getElementById(`notification-${id}`);
             if (notification) {
                 notification.classList.remove('show');
+                // Clean up stored action
+                if (window[`notificationAction_${id}`]) {
+                    delete window[`notificationAction_${id}`];
+                }
                 setTimeout(() => {
                     if (notification.parentNode) {
                         notification.parentNode.removeChild(notification);
@@ -633,9 +712,11 @@
             createNotification(
                 'chart-update',
                 'Chart Data Updated',
-                `New price data available for ${roundsText}. Click to view chart.`,
+                `New price data available for ${roundsText}`,
                 '📈',
-                () => showSection('chart')
+                () => showSection('chart'),
+                'View Chart',
+                'chart-btn'
             );
         }
         
@@ -644,9 +725,11 @@
             createNotification(
                 'chart-load',
                 'Chart Data Loaded',
-                `Price history loaded for ${roundCount} round${roundCount !== 1 ? 's' : ''}. Click to view chart.`,
+                `Price history loaded for ${roundCount} round${roundCount !== 1 ? 's' : ''}`,
                 '📊',
-                () => showSection('chart')
+                () => showSection('chart'),
+                'View Chart',
+                'chart-btn'
             );
         }
         
@@ -657,7 +740,7 @@
             createNotification(
                 'news-update',
                 'News Published',
-                `${newsCount} new news item${newsCount !== 1 ? 's' : ''} published. Click to read news.`,
+                `${newsCount} new news item${newsCount !== 1 ? 's' : ''} published`,
                 '📰',
                 () => {
                     showSection('news');
@@ -667,7 +750,9 @@
                         newsSelect.value = 'current';
                         showNewsForRound();
                     }
-                }
+                },
+                'Read News',
+                'news-btn'
             );
         }
         
@@ -676,7 +761,7 @@
             createNotification(
                 'news-load',
                 'News History Loaded',
-                `${newsCount} news item${newsCount !== 1 ? 's' : ''} loaded. Click to read news.`,
+                `${newsCount} news item${newsCount !== 1 ? 's' : ''} loaded`,
                 '📋',
                 () => {
                     showSection('news');
@@ -686,7 +771,9 @@
                         newsSelect.value = 'current';
                         showNewsForRound();
                     }
-                }
+                },
+                'Read News',
+                'news-btn'
             );
         }
 

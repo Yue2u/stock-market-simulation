@@ -1,9 +1,9 @@
 import asyncio
 import logging
+from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
-from fastapi.staticfiles import StaticFiles
 
 from admin_api import router, secret_uid
 
@@ -31,9 +31,6 @@ async def stream():
         yield f"data: {data}\n\n"
 
     Publisher.unsubscribe(sub)
-
-
-from contextlib import asynccontextmanager
 
 
 @asynccontextmanager
