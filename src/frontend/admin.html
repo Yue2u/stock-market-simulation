@@ -462,7 +462,14 @@
                 
                 if (response.ok) {
                     const result = await response.json();
-                    showStatus(result.message || 'News published successfully!', result.status === 'success' ? 'success' : 'error');
+                    if (result.status === 'success') {
+                        showStatus(result.message || 'News published successfully!', 'success');
+                        setTimeout(loadServiceInfo, 1000);
+                    } else if (result.status === 'warning') {
+                        showStatus(result.message || 'Warning occurred', 'warning');
+                    } else {
+                        showStatus(result.message || 'Unknown error occurred', 'error');
+                    }
                 } else {
                     throw new Error('Failed to publish news');
                 }

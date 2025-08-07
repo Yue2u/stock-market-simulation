@@ -47,3 +47,4 @@ def get_required_currencies():
 
 # Load required currencies dynamically
 REQUIRED_CURRENCIES = get_required_currencies()
+logger.info(f"Currencies: {REQUIRED_CURRENCIES}")

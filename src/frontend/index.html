@@ -491,6 +491,10 @@
                         </select>
                         
                         <h3>Stock Purchases</h3>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <span></span>
+                            <button type="button" onclick="clearAllQuantities()" style="background-color: #e74c3c; color: white; border: none; padding: 5px 15px; border-radius: 3px; cursor: pointer; font-size: 12px;">Clear All</button>
+                        </div>
                         <div id="stockInputs">
                             <!-- Stock input rows will be populated dynamically -->
                         </div>
@@ -798,6 +802,7 @@
             if (data.data_type === 'chart') {
                 if (data.event_type === 'load') {
                     stockData = data.data;
+                    console.log('handleStreamData - chart load, stockData:', stockData);
                     updateChart();
                     updateRoundSelectors();
                     // Show notification for chart data load only on first load
@@ -807,6 +812,7 @@
                     }
                 } else if (data.event_type === 'update') {
                     Object.assign(stockData, data.data);
+                    console.log('handleStreamData - chart update, new stockData:', stockData);
                     updateChart();
                     updateRoundSelectors();
                     // Always show notification for chart data updates
@@ -1065,10 +1071,17 @@
                 const buyPrices = stockData[buyRound];
                 const sellPrices = stockData[sellRound];
                 
+                // Debug logging
+                console.log('updatePriceDisplays - buyRound:', buyRound, 'sellRound:', sellRound);
+                console.log('updatePriceDisplays - buyPrices:', buyPrices);
+                console.log('updatePriceDisplays - sellPrices:', sellPrices);
+                
                 availableCurrencies.forEach(currency => {
                     const currencyKey = currency.toLowerCase().replace(/[^a-z0-9]/g, '');
                     const buyPrice = buyPrices[currency] || 0;
                     const sellPrice = sellPrices[currency] || 0;
+                    
+                    console.log(`updatePriceDisplays - ${currency}: buy=${buyPrice}, sell=${sellPrice}`);
                     
                     const buyPriceElement = document.getElementById(`${currencyKey}-buy-price`);
                     const sellPriceElement = document.getElementById(`${currencyKey}-sell-price`);
@@ -1108,6 +1121,11 @@
                 const buyPrices = stockData[buyRound];
                 const sellPrices = stockData[sellRound];
                 
+                // Debug logging
+                console.log('updateCalculation - buyRound:', buyRound, 'sellRound:', sellRound);
+                console.log('updateCalculation - buyPrices:', buyPrices);
+                console.log('updateCalculation - sellPrices:', sellPrices);
+                
                 let totalCost = 0;
                 let totalRevenue = 0;
                 
@@ -1117,6 +1135,8 @@
                     const currencyKey = currency.toLowerCase().replace(/[^a-z0-9]/g, '');
                     const buyPrice = buyPrices[currency] || 0;
                     const sellPrice = sellPrices[currency] || 0;
+                    
+                    console.log(`updateCalculation - ${currency}: qty=${qty}, buy=${buyPrice}, sell=${sellPrice}`);
                     
                     const cost = qty * buyPrice;
                     const revenue = qty * sellPrice;
@@ -1185,6 +1205,20 @@
         
         function hideError() {
             document.getElementById('calculationErrors').style.display = 'none';
+        }
+        
+        function clearAllQuantities() {
+            // Clear all stock quantity inputs
+            availableCurrencies.forEach(currency => {
+                const currencyKey = currency.toLowerCase().replace(/[^a-z0-9]/g, '');
+                const qtyInput = document.getElementById(`${currencyKey}-qty`);
+                if (qtyInput) {
+                    qtyInput.value = '';
+                }
+            });
+            
+            // Update calculations to reflect cleared quantities
+            updateCalculation();
         }
         
         function showSection(sectionName) {

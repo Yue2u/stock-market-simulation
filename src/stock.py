@@ -19,14 +19,19 @@ class StockMarket:
     def __init__(self):
         try:
             self.data, self.news = self.load_chart_data()
-            self.current_step = 0
+            self.current_step_chart = 0
+            self.current_step_news = -1
         except Exception as e:
             logger.error(f"Failed to initialize StockMarket: {e}")
             raise
 
     @property
-    def current_step_str(self):
-        return str(self.current_step)
+    def current_step_chart_str(self):
+        return str(self.current_step_chart)
+
+    @property
+    def current_step_news_str(self):
+        return str(self.current_step_news)
 
     def load_chart_data(self) -> tuple[list[dict[str, int]], list[list[str]]]:
         """Load both chart data and news from file once to avoid duplicate reads"""
@@ -54,41 +59,80 @@ class StockMarket:
         except IOError as e:
             raise IOError(f"Failed to read chart data file: {e}")
 
-    def set_step(self, step: int):
-        """Set current step with bounds checking"""
+    def set_chart_step(self, step: int):
+        """Set current chart step with bounds checking"""
         if 0 <= step < len(self.data):
-            self.current_step = step
+            self.current_step_chart = step
+            if self.current_step_news >= self.current_step_chart:
+                self.current_step_news = self.current_step_chart - 1
         else:
             logger.warning(
-                f"Invalid step {step}, must be between 0 and {len(self.data)-1}"
+                f"Invalid chart step {step}, must be between 0 and {len(self.data)-1}"
             )
 
-    def next_step(self):
-        """Move to next step with bounds checking"""
-        if self.current_step >= len(self.data) - 1:
-            logger.info("Already at the last step, cannot advance further")
+    def set_news_step(self, step: int):
+        """Set current news step with constraint validation"""
+        if step + 1 > self.current_step_chart:
+            logger.warning(
+                f"Invalid news step {step}, must satisfy: news_step + 1 <= chart_step ({self.current_step_chart})"
+            )
             return False
-        self.current_step += 1
+        if 0 <= step < len(self.news):
+            self.current_step_news = step
+            return True
+        else:
+            logger.warning(
+                f"Invalid news step {step}, must be between 0 and {len(self.news)-1}"
+            )
+            return False
+
+    def next_chart_step(self):
+        """Move to next chart step with bounds checking"""
+        if self.current_step_chart >= len(self.data) - 1:
+            logger.info("Already at the last chart step, cannot advance further")
+            return False
+        self.current_step_chart += 1
+        if self.current_step_news >= self.current_step_chart:
+            self.current_step_news = self.current_step_chart - 1
+        return True
+
+    def next_news_step(self):
+        """Move to next news step with constraint validation"""
+        if self.current_step_news + 1 > self.current_step_chart:
+            logger.warning(
+                f"Cannot advance news step: would violate constraint (news_step + 1 <= chart_step {self.current_step_chart})"
+            )
+            return False
+        if self.current_step_news + 1 >= len(self.news):
+            logger.info("Already at the last news step, cannot advance further")
+            return False
+        self.current_step_news += 1
         return True
 
     def get_current_step_data(self) -> dict[str, dict[str, int]]:
         """Returns dict with string keys, not int keys"""
-        return {self.current_step_str: self.data[self.current_step]}
+        return {self.current_step_chart_str: self.data[self.current_step_chart]}
 
     def get_until_current_step_data(self) -> dict[str, dict[str, int]]:
         """Returns dict with string keys, not int keys"""
         return {
-            str(i): data for i, data in enumerate(self.data[: self.current_step + 1])
+            str(i): data
+            for i, data in enumerate(self.data[: self.current_step_chart + 1])
         }
 
     def get_current_step_news(self) -> dict[str, list[str]]:
         """Returns dict with string keys, not int keys"""
-        return {self.current_step_str: self.news[self.current_step]}
+        if self.current_step_news < 0:
+            return {}
+        return {self.current_step_news_str: self.news[self.current_step_news]}
 
     def get_until_current_step_news(self) -> dict[str, list[str]]:
         """Returns dict with string keys, not int keys"""
+        if self.current_step_news < 0:
+            return {}
         return {
-            str(i): news for i, news in enumerate(self.news[: self.current_step + 1])
+            str(i): news
+            for i, news in enumerate(self.news[: self.current_step_news + 1])
         }
 
     def update_step_data(self, step_num: int, data: dict[str, int]):
@@ -122,7 +166,9 @@ class StockMarket:
         return self.news[step_num]
 
     def reset(self):
-        self.current_step = 0
+        self.data, self.news = self.load_chart_data()
+        self.current_step_chart = 0
+        self.current_step_news = -1
 
 
 class StockMarketController:
@@ -136,15 +182,31 @@ class StockMarketController:
         return cls._stock
 
     @classmethod
-    async def next_step(cls):
-        """Move to next step with error handling"""
+    async def next_chart_step(cls):
+        """Move to next chart step with error handling"""
         try:
-            success = cls.stock().next_step()
+            success = cls.stock().next_chart_step()
             if not success:
-                logger.warning("Cannot advance to next step: already at last step")
+                logger.warning(
+                    "Cannot advance to next chart step: already at last step"
+                )
             return success
         except Exception as e:
-            logger.error(f"Error advancing to next step: {e}")
+            logger.error(f"Error advancing to next chart step: {e}")
+            raise
+
+    @classmethod
+    async def next_news_step(cls):
+        """Move to next news step with error handling"""
+        try:
+            success = cls.stock().next_news_step()
+            if not success:
+                logger.warning(
+                    "Cannot advance to next news step: constraint violation or at last step"
+                )
+            return success
+        except Exception as e:
+            logger.error(f"Error advancing to next news step: {e}")
             raise
 
     @classmethod
@@ -161,8 +223,13 @@ class StockMarketController:
     async def publish_current_news(cls):
         """Publish current news with error handling"""
         try:
+            success = cls.stock().next_news_step()
+            if not success:
+                logger.warning("Cannot publish news: unable to advance news step")
+                return False
             news = cls.stock().get_current_step_news()
             await Publisher.notify(NewsUpdateEvent(news))
+            return True
         except Exception as e:
             logger.error(f"Error publishing news: {e}")
             raise
@@ -209,8 +276,8 @@ class StockMarketController:
 
     @classmethod
     def get_next_step_chart(cls):
-        return cls.stock().get_step_data(cls.stock().current_step + 1)
+        return cls.stock().get_step_data(cls.stock().current_step_chart + 1)
 
     @classmethod
     def get_next_step_news(cls):
-        return cls.stock().get_step_news(cls.stock().current_step + 1)
+        return cls.stock().get_step_news(cls.stock().current_step_news + 1)
