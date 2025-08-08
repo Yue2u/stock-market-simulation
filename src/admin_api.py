@@ -1,11 +1,9 @@
-from uuid import uuid4
-
 from fastapi import APIRouter
 from pydantic import BaseModel
 
 from stock import StockMarketController
 
-secret_uid = uuid4().hex
+secret_uid = "18277e534bd1424da77490360b5b9614"
 
 print(f"Secret admin_url is /__admin__/{secret_uid}", flush=True)
 
